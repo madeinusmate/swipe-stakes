@@ -1,36 +1,215 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Myriad Starter Kit
 
-## Getting Started
+A developer-friendly starter kit for building prediction market applications on [Myriad Protocol](https://myriadprotocol.com) and [Abstract](https://abs.xyz).
 
-First, run the development server:
+## Features
+
+- **Market Browsing** - Search, filter, and explore prediction markets
+- **Market Details** - View outcomes, price charts, and trading history
+- **Trading** - Buy and sell outcome shares with real-time quotes
+- **Portfolio** - Track positions, P&L, and claim winnings
+- **Wallet Support** - Abstract Global Wallet (AGW) + standard wallets via RainbowKit
+- **Network Switching** - Toggle between testnet and mainnet
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Styling**: Tailwind CSS v4 + shadcn/ui
+- **Wallet**: RainbowKit + wagmi + viem
+- **Data**: TanStack Query + Myriad REST API
+- **Smart Contracts**: polkamarkets-js SDK
+
+## Quick Start
+
+### 1. Clone the repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/your-org/myriad-starter-kit.git
+cd myriad-starter-kit
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install dependencies
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Configure environment
 
-## Learn More
+```bash
+cp .env.example .env.local
+```
 
-To learn more about Next.js, take a look at the following resources:
+Edit `.env.local` with your values:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_MYRIAD_API_KEY` | Myriad API key ([contact Myriad](https://myriadprotocol.com)) | Yes |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | WalletConnect Cloud project ID | Recommended |
+| `NEXT_PUBLIC_REFERRAL_CODE` | Your referral code for revenue sharing | Optional |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Start development server
 
-## Deploy on Vercel
+```bash
+pnpm dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Next.js App                              │
+├─────────────────────────────────────────────────────────────────┤
+│  Pages                                                          │
+│  ├── / (Markets listing)                                        │
+│  ├── /markets/[slug] (Market detail + trading)                  │
+│  └── /portfolio (User positions)                                │
+├─────────────────────────────────────────────────────────────────┤
+│  Data Layer                                                      │
+│  ├── TanStack Query (caching, loading states)                   │
+│  ├── Myriad REST API (market data, quotes)                      │
+│  └── polkamarkets-js SDK (on-chain transactions)                │
+├─────────────────────────────────────────────────────────────────┤
+│  Wallet Layer                                                    │
+│  ├── RainbowKit (connection UI)                                 │
+│  ├── wagmi (React hooks)                                        │
+│  └── AGW Connector (Abstract Global Wallet)                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Project Structure
+
+```
+lib/
+  config.ts           # Network configs, contract addresses
+  wagmi.ts            # Wallet configuration
+  myriad-api.ts       # REST API client
+  myriad-sdk.ts       # polkamarkets-js wrapper
+  network-context.tsx # Network switching
+  queries/            # TanStack Query options
+  mutations/          # Trade/claim mutations
+  types/              # TypeScript interfaces
+
+components/
+  layout/             # Header, navigation
+  markets/            # Market list, cards, filters
+  market/             # Detail page components
+  portfolio/          # Position cards, summary
+  ui/                 # shadcn primitives
+
+app/
+  page.tsx            # Markets listing
+  markets/[slug]/     # Market detail
+  portfolio/          # User portfolio
+```
+
+## Customization Guide
+
+### Theming
+
+The starter kit uses shadcn/ui with a neutral theme. Customize in:
+
+- `app/globals.css` - CSS variables for colors, radius, etc.
+- `app/providers.tsx` - RainbowKit theme configuration
+
+### Adding Networks
+
+To add support for other Myriad-supported chains (Linea, BNB Chain):
+
+1. Add chain config to `lib/config.ts`
+2. Add chain to `lib/wagmi.ts`
+3. Update network context to include new chains
+
+### Custom Components
+
+All components follow a consistent pattern:
+- Located in `components/` directory
+- TypeScript interfaces for props
+- JSDoc comments explaining usage
+
+## Key Files Explained
+
+### `lib/config.ts`
+Central configuration file with:
+- Network settings (RPC URLs, chain IDs)
+- Contract addresses for both testnet and mainnet
+- Token addresses (USDC, PENGU, PTS)
+- API endpoints
+
+### `lib/myriad-api.ts`
+Typed REST API client with functions for:
+- `getMarkets()` - List markets with filters
+- `getMarket()` - Single market with price charts
+- `getQuote()` - Trade quotes with calldata
+- `getUserPortfolio()` - User positions
+
+### `lib/queries/`
+TanStack Query options factories using the `queryOptions` pattern:
+- Type-safe query keys
+- Automatic caching configuration
+- Easy to compose and extend
+
+### `lib/mutations/`
+TanStack Query mutations for transactions:
+- `useTrade()` - Buy/sell with approval flow
+- `useClaim()` - Claim winnings
+
+## API Reference
+
+The starter kit uses the Myriad Protocol REST API v2:
+
+- **Base URL (Production)**: `https://api-v2.myriadprotocol.com`
+- **Base URL (Staging)**: `https://api-v2.staging.myriadprotocol.com`
+
+Key endpoints used:
+- `GET /markets` - List markets
+- `GET /markets/:slug` - Market details
+- `POST /markets/quote` - Trade quotes
+- `GET /users/:address/portfolio` - User positions
+
+[Full API Documentation](https://docs.myriadprotocol.com)
+
+## Revenue Sharing
+
+Builders can earn a percentage of buy volume through Myriad's referral program:
+
+1. **Apply for whitelisting** - Contact Myriad team
+2. **Get your referral code** - Short ASCII string
+3. **Configure the starter kit** - Set `NEXT_PUBLIC_REFERRAL_CODE`
+
+When configured, all buy transactions automatically use `referralBuy` to attribute trades to your code.
+
+Eligible trades: Markets with `distributor_fee > 0`
+
+## Smart Contracts
+
+### Abstract Mainnet
+
+| Contract | Address |
+|----------|---------|
+| PredictionMarket | `0x3e0F5F8F5Fb043aBFA475C0308417Bf72c463289` |
+| PredictionMarketQuerier | `0x1d5773Cd0dC74744C1F7a19afEeECfFE64f233Ff` |
+
+### Abstract Testnet
+
+| Contract | Address |
+|----------|---------|
+| PredictionMarket | `0x6c44Abf72085E5e71EeB7C951E3079073B1E7312` |
+| PredictionMarketQuerier | `0xa30c60107f9011dd49fc9e04ebe15963064eecc1` |
+
+## Contributing
+
+Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Resources
+
+- [Myriad Protocol](https://myriadprotocol.com)
+- [Abstract](https://abs.xyz)
+- [Myriad API Docs](https://docs.myriadprotocol.com)
+- [polkamarkets-js](https://github.com/polkamarkets/polkamarkets-js)

@@ -1,0 +1,142 @@
+"use client";
+
+/**
+ * Market List Component
+ *
+ * Displays a grid of market cards with loading and empty states.
+ * Handles pagination through "Load More" button.
+ */
+
+import { MarketCard } from "./market-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import type { MarketSummary, Pagination } from "@/lib/types";
+
+// =============================================================================
+// Loading Skeleton
+// =============================================================================
+
+function MarketCardSkeleton() {
+  return (
+    <Card className="h-full p-4">
+      <div className="flex items-start gap-3">
+        <Skeleton className="h-12 w-12 rounded-lg" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-full" />
+      </div>
+      <div className="mt-4 flex justify-between border-t pt-3">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+    </Card>
+  );
+}
+
+export function MarketListSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <MarketCardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
+// =============================================================================
+// Empty State
+// =============================================================================
+
+interface EmptyStateProps {
+  title?: string;
+  description?: string;
+}
+
+function EmptyState({
+  title = "No markets found",
+  description = "Try adjusting your filters or check back later.",
+}: EmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="rounded-full bg-muted p-4">
+        <svg
+          className="h-8 w-8 text-muted-foreground"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+      <h3 className="mt-4 text-lg font-medium">{title}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+// =============================================================================
+// Market List Component
+// =============================================================================
+
+interface MarketListProps {
+  markets: MarketSummary[];
+  pagination?: Pagination;
+  isLoading?: boolean;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
+}
+
+export function MarketList({
+  markets,
+  pagination,
+  isLoading,
+  onLoadMore,
+  isLoadingMore,
+}: MarketListProps) {
+  if (isLoading) {
+    return <MarketListSkeleton />;
+  }
+
+  if (markets.length === 0) {
+    return <EmptyState />;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Market Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {markets.map((market) => (
+          <MarketCard key={`${market.networkId}-${market.id}`} market={market} />
+        ))}
+      </div>
+
+      {/* Load More */}
+      {pagination && pagination.hasNext && onLoadMore && (
+        <div className="flex justify-center pt-4">
+          <Button variant="outline" onClick={onLoadMore} disabled={isLoadingMore}>
+            {isLoadingMore ? "Loading..." : "Load More"}
+          </Button>
+        </div>
+      )}
+
+      {/* Results Count */}
+      {pagination && (
+        <p className="text-center text-sm text-muted-foreground">
+          Showing {markets.length} of {pagination.total} markets
+        </p>
+      )}
+    </div>
+  );
+}
+
