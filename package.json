@@ -11,10 +11,11 @@
   "dependencies": {
     "@abstract-foundation/agw-client": "^1.10.0",
     "@abstract-foundation/agw-react": "^1.10.0",
+    "@radix-ui/react-avatar": "^1.1.11",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
-    "@rainbow-me/rainbowkit": "^2.2.9",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.10",
     "class-variance-authority": "^0.7.1",

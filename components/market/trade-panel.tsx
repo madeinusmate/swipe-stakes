@@ -14,7 +14,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAccount } from "wagmi";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ConnectWalletButton } from "@/components/connect-wallet-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -222,16 +222,7 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
 
           {/* Action Button */}
           {!isConnected ? (
-            <ConnectButton.Custom>
-              {({ openConnectModal }) => (
-                <Button
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={openConnectModal}
-                >
-                  Login
-                </Button>
-              )}
-            </ConnectButton.Custom>
+            <ConnectWalletButton className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" />
           ) : !isMarketOpen ? (
             <Button className="w-full" disabled>
               Market Closed

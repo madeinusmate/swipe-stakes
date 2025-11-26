@@ -12,7 +12,7 @@
 
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ConnectWalletButton } from "@/components/connect-wallet-button";
 import { useNetwork } from "@/lib/network-context";
 import { portfolioQueryOptions } from "@/lib/queries";
 import { PortfolioSummary } from "@/components/portfolio/portfolio-summary";
@@ -92,7 +92,7 @@ function ConnectWalletPrompt() {
           Connect your wallet to view your portfolio and positions.
         </p>
         <div className="mt-6">
-          <ConnectButton />
+          <ConnectWalletButton />
         </div>
       </CardContent>
     </Card>

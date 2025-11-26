@@ -11,12 +11,12 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Suspense, useState, useEffect } from "react";
+import { ConnectWalletButton } from "@/components/connect-wallet-button";
 
 // =============================================================================
 // Navigation Links
@@ -87,7 +87,7 @@ function SearchBar() {
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/5">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Logo and Nav */}
         <div className="flex items-center gap-8 shrink-0">
@@ -111,14 +111,7 @@ export function Header() {
         {/* Right side: Wallet */}
         <div className="flex items-center gap-3 shrink-0">
           <ModeToggle />
-          <ConnectButton
-            chainStatus="icon"
-            showBalance={false}
-            accountStatus={{
-              smallScreen: "avatar",
-              largeScreen: "full",
-            }}
-          />
+          <ConnectWalletButton />
         </div>
       </div>
     </header>
