@@ -17,3 +17,5 @@ export {
 // Portfolio
 export { portfolioKeys, portfolioQueryOptions } from "./portfolio";
 
+// Profile
+export { profileKeys, abstractProfileQueryOptions } from "./profile";

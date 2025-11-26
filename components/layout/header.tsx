@@ -22,30 +22,6 @@ import { ConnectWalletButton } from "@/components/connect-wallet-button";
 // Navigation Links
 // =============================================================================
 
-const navLinks = [
-  { href: "/", label: "Markets" },
-  { href: "/portfolio", label: "Portfolio" },
-] as const;
-
-function NavLinks() {
-  return (
-    <nav className="hidden items-center gap-1 md:flex">
-      {navLinks.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className={cn(
-            "rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors",
-            "hover:bg-accent hover:text-foreground"
-          )}
-        >
-          {link.label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
-
 function SearchBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -98,7 +74,6 @@ export function Header() {
             </div>
             <span className="text-lg font-semibold tracking-tight hidden sm:inline-block">Myriad</span>
           </Link>
-          <NavLinks />
         </div>
 
         {/* Center: Search Bar */}
@@ -110,7 +85,6 @@ export function Header() {
 
         {/* Right side: Wallet */}
         <div className="flex items-center gap-3 shrink-0">
-          <ModeToggle />
           <ConnectWalletButton />
         </div>
       </div>
