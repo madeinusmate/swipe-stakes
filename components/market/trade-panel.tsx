@@ -167,7 +167,11 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
               {sortedOutcomes.map((outcome, index) => {
                 const originalIndex = market.outcomes.findIndex(o => o.id === outcome.id);
                 const isSelected = selectedOutcomeId === outcome.id;
-                const colorVar = `var(--chart-${(originalIndex % 10) + 1})`;
+                let colorVar = `var(--chart-${(originalIndex % 10) + 1})`;
+                
+                if (outcome.title.toLowerCase() === "yes") colorVar = "#10b981";
+                if (outcome.title.toLowerCase() === "no") colorVar = "#f43f5e";
+
                 return (
                   <button
                     key={outcome.id}

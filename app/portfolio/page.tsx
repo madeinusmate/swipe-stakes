@@ -15,7 +15,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ConnectWalletButton } from "@/components/connect-wallet-button";
 import { useNetwork } from "@/lib/network-context";
 import { portfolioQueryOptions, abstractProfileQueryOptions } from "@/lib/queries";
-import { PortfolioSummary } from "@/components/portfolio/portfolio-summary";
 import { PositionsTable } from "@/components/portfolio/positions-table";
 import { ActivityFeed } from "@/components/portfolio/activity-feed";
 import { Button } from "@/components/ui/button";
@@ -23,10 +22,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, LayoutList, Activity as ActivityIcon } from "lucide-react";
+import { User, LayoutList, Activity as ActivityIcon, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import type { Position } from "@/lib/types";
 
 // =============================================================================
 // Loading Skeleton
@@ -124,16 +124,32 @@ function EmptyPortfolio() {
 }
 
 // =============================================================================
+// Helper Functions
+// =============================================================================
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+// =============================================================================
 // Profile Header
 // =============================================================================
 
-function ProfileHeader({ address }: { address: string }) {
+function ProfileHeader({ address, positions }: { address: string; positions: Position[] }) {
   const { data: profile, isLoading } = useQuery(abstractProfileQueryOptions(address));
+  
+  // Calculate total P&L
+  const totalProfit = positions.reduce((sum, p) => sum + p.profit, 0);
 
   if (isLoading) return <Skeleton className="h-24 w-full rounded-xl" />;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 sm:p-8 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden">
+    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 sm:p-8 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm relative overflow-hidden">
         {/* Ambient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
         
@@ -148,16 +164,29 @@ function ProfileHeader({ address }: { address: string }) {
           </Avatar>
         </div>
 
-        <div className="flex flex-col items-center sm:items-start text-center sm:text-left relative z-10 pt-2">
+        <div className="flex-1 flex flex-col sm:flex-row items-center sm:justify-between gap-4 relative z-10">
            <div className="flex items-center gap-3">
              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                {profile?.name || "Abstract User"}
              </h1>
-             {profile?.tier && (
-               <span className="px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                 {profile.tier}
-               </span>
-             )}
+           </div>
+           
+           {/* Total P&L */}
+           <div className="flex flex-col items-end justify-center pl-6 border-l border-border/50 my-1">
+             <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total P&L</span>
+                <TrendingUp className={cn(
+                  "h-3 w-3", 
+                  totalProfit >= 0 ? "text-emerald-500" : "text-rose-500 rotate-180"
+                )} />
+             </div>
+             <p className={cn(
+               "text-2xl sm:text-3xl font-bold tabular-nums tracking-tight",
+               totalProfit >= 0 ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.2)]"
+             )}>
+               {totalProfit >= 0 ? "+" : ""}
+               {formatCurrency(totalProfit)}
+             </p>
            </div>
         </div>
     </div>
@@ -215,46 +244,39 @@ export default function PortfolioPage() {
       {data && address && (
         <div className="space-y-8">
           
-          {/* 1. Profile Header */}
-          <ProfileHeader address={address} />
+          {/* 1. Profile Header with P&L */}
+          <ProfileHeader address={address} positions={data.data} />
 
-          {/* 2. Stats Summary */}
-          <PortfolioSummary positions={data.data} />
-
-          {/* 3. Main Content - Tabs */}
-          <Tabs defaultValue="positions" className="w-full space-y-6">
-             <div className="flex items-center justify-between">
-               <TabsList className="bg-muted/50 p-1 border border-border/50">
-                 <TabsTrigger value="positions" className="gap-2 px-4">
-                   <LayoutList className="h-4 w-4" />
+          {/* 2. Main Content - Tabs */}
+          <Tabs defaultValue="positions" className="w-full rounded-xl border border-border/50 bg-card overflow-hidden gap-0">
+             <div className="border-b border-border/50 bg-muted/30 px-4 py-3 flex items-center">
+               <TabsList className="bg-muted/50 h-9 p-1">
+                 <TabsTrigger value="positions" className="gap-2 px-3 text-xs font-medium">
+                   <LayoutList className="h-3.5 w-3.5" />
                    Positions
-                   <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                   <span className="ml-1.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full leading-none">
                      {data.data.length}
                    </span>
                  </TabsTrigger>
-                 <TabsTrigger value="activity" className="gap-2 px-4">
-                   <ActivityIcon className="h-4 w-4" />
+                 <TabsTrigger value="activity" className="gap-2 px-3 text-xs font-medium">
+                   <ActivityIcon className="h-3.5 w-3.5" />
                    Activity
                  </TabsTrigger>
                </TabsList>
              </div>
 
-             <TabsContent value="positions" className="space-y-4 outline-none mt-0">
+             <TabsContent value="positions" className="m-0 outline-none">
                 {data.data.length === 0 ? (
-                  <EmptyPortfolio />
+                  <div className="p-6 sm:p-12">
+                    <EmptyPortfolio />
+                  </div>
                 ) : (
-                  <PositionsTable positions={data.data} />
+                  <PositionsTable positions={data.data} className="border-0 rounded-none" />
                 )}
              </TabsContent>
 
-             <TabsContent value="activity" className="space-y-4 outline-none mt-0">
-                {data.data.length === 0 ? (
-                  <div className="p-8 text-center border rounded-lg border-dashed text-muted-foreground">
-                    No activity found.
-                  </div>
-                ) : (
-                  <ActivityFeed />
-                )}
+             <TabsContent value="activity" className="m-0 outline-none">
+                <ActivityFeed className="border-0 rounded-none" />
              </TabsContent>
           </Tabs>
         </div>

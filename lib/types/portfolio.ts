@@ -33,6 +33,20 @@ export interface Position {
   /** Market image URL */
   imageUrl?: string | null;
 
+  // Market metadata (returned by API)
+  /** Market title */
+  marketTitle?: string;
+  /** Market slug for linking */
+  marketSlug?: string;
+  /** Outcome title (e.g., "Yes", "No") */
+  outcomeTitle?: string;
+  /** Market state */
+  marketState?: "open" | "closed" | "resolved";
+  /** ERC20 token address */
+  tokenAddress?: string;
+  /** Market expiration date (ISO string) */
+  expiresAt?: string;
+
   // Position metrics
   /** Net shares held (buys minus sells) */
   shares: number;

@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { Loader2, ShoppingCart, Banknote, RefreshCw, ExternalLink, BarChart3 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -65,7 +65,11 @@ function getActionBadge(action: string) {
 // Component
 // =============================================================================
 
-export function ActivityFeed() {
+interface ActivityFeedProps {
+  className?: string;
+}
+
+export function ActivityFeed({ className }: ActivityFeedProps = {}) {
   const { address } = useAccount();
   const { apiBaseUrl, networkConfig } = useNetwork();
 
@@ -102,7 +106,7 @@ export function ActivityFeed() {
 
   if (events.length === 0) {
     return (
-      <div className="p-12 text-center border rounded-lg border-dashed text-muted-foreground">
+      <div className={cn("p-12 text-center border rounded-lg border-dashed text-muted-foreground", className)}>
         No activity found.
       </div>
     );
@@ -110,7 +114,7 @@ export function ActivityFeed() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-border/50 overflow-hidden">
+      <div className={cn("rounded-md border border-border/50 overflow-hidden", className)}>
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="hover:bg-transparent border-border/50">
@@ -119,14 +123,14 @@ export function ActivityFeed() {
               <TableHead>Outcome</TableHead>
               <TableHead className="text-right">Value</TableHead>
               <TableHead className="text-right">Shares</TableHead>
-              <TableHead className="text-right">Time</TableHead>
+              <TableHead className="text-right">Date</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {events.map((event, idx) => (
               <TableRow key={`${event.marketId}-${event.timestamp}-${idx}`} className="group border-border/50 hover:bg-muted/30">
                 {/* Market Info */}
-                <TableCell className="align-top py-4">
+                <TableCell className="align-middle py-4">
                   <Link href={`/markets/${event.marketSlug}`} className="flex gap-3 group/market">
                     <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
                       {event.imageUrl ? (
@@ -151,30 +155,30 @@ export function ActivityFeed() {
                 </TableCell>
 
                 {/* Action */}
-                <TableCell className="align-top py-4">
+                <TableCell className="align-middle py-4">
                   {getActionBadge(event.action)}
                 </TableCell>
 
                 {/* Outcome */}
-                <TableCell className="align-top py-4">
+                <TableCell className="align-middle py-4">
                   <Badge variant="secondary" className="font-medium">
                     {event.outcomeTitle || `Outcome #${event.outcomeId}`}
                   </Badge>
                 </TableCell>
 
                 {/* Value */}
-                <TableCell className="text-right align-top py-4 font-medium tabular-nums">
+                <TableCell className="text-right align-middle py-4 font-medium tabular-nums">
                   {formatCurrency(event.value)}
                 </TableCell>
 
                 {/* Shares */}
-                <TableCell className="text-right align-top py-4 text-muted-foreground tabular-nums">
+                <TableCell className="text-right align-middle py-4 text-muted-foreground tabular-nums">
                   {event.shares.toFixed(2)}
                 </TableCell>
 
-                {/* Time */}
-                <TableCell className="text-right align-top py-4 text-muted-foreground text-xs whitespace-nowrap">
-                  {formatDistanceToNow(new Date(event.timestamp * 1000), { addSuffix: true })}
+                {/* Date */}
+                <TableCell className="text-right align-middle py-4 text-muted-foreground text-xs whitespace-nowrap">
+                  {format(new Date(event.timestamp * 1000), "MMM d, yyyy")}
                 </TableCell>
               </TableRow>
             ))}

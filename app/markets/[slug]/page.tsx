@@ -158,7 +158,9 @@ export default function MarketDetailPage() {
               .map((outcome, index) => {
                 const originalIndex = market.outcomes.findIndex(o => o.id === outcome.id);
                 // Use chart colors from globals.css
-                const colorVar = `var(--chart-${(originalIndex % 10) + 1})`;
+                let colorVar = `var(--chart-${(originalIndex % 10) + 1})`;
+                if (outcome.title.toLowerCase() === "yes") colorVar = "#10b981";
+                if (outcome.title.toLowerCase() === "no") colorVar = "#f43f5e";
                 return (
                   <div key={outcome.id} className="flex items-center gap-1.5">
                     <div
@@ -221,20 +223,6 @@ export default function MarketDetailPage() {
             )}
           </div>
 
-          {/* Resolution Info (if resolved) */}
-          {market.state === "resolved" && market.resolvedOutcomeId !== null && (
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-              <h3 className="font-semibold text-emerald-600 dark:text-emerald-400">
-                Market Resolved
-              </h3>
-              <p className="mt-1 text-sm">
-                Winning outcome:{" "}
-                <span className="font-medium">
-                  {market.outcomes.find((o) => o.id === market.resolvedOutcomeId)?.title}
-                </span>
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Right Column - Trade Panel and Timeline */}
@@ -280,7 +268,11 @@ export default function MarketDetailPage() {
 
                   {/* Market closes */}
                   <div className="flex gap-3 items-start relative">
-                    <Circle className="h-6 w-6 text-muted-foreground bg-card flex-shrink-0" />
+                    {market.state !== "open" ? (
+                      <CheckCircle className="h-6 w-6 text-emerald-500 bg-card flex-shrink-0" />
+                    ) : (
+                      <Circle className="h-6 w-6 text-muted-foreground bg-card flex-shrink-0" />
+                    )}
                     <div>
                       <p className="font-medium text-sm">Market closes</p>
                       <p className="text-xs text-muted-foreground">
@@ -291,11 +283,23 @@ export default function MarketDetailPage() {
 
                   {/* Resolution */}
                   <div className="flex gap-3 items-start relative">
-                    <Circle className="h-6 w-6 text-muted-foreground bg-card flex-shrink-0" />
+                    {market.state === "resolved" ? (
+                      <CheckCircle className="h-6 w-6 text-emerald-500 bg-card flex-shrink-0" />
+                    ) : (
+                      <Circle className="h-6 w-6 text-muted-foreground bg-card flex-shrink-0" />
+                    )}
                     <div>
                       <p className="font-medium text-sm">Resolution</p>
                       <p className="text-xs text-muted-foreground">
-                        The outcome will be validated by the team within 24 hours of its occurrence.
+                        {market.state === "resolved" && market.resolvedOutcomeId !== null ? (
+                          <>
+                            Resolved: <span className="font-medium text-foreground">
+                              {market.outcomes.find((o) => o.id === market.resolvedOutcomeId)?.title}
+                            </span>
+                          </>
+                        ) : (
+                          "The outcome will be validated by the team within 24 hours of its occurrence."
+                        )}
                       </p>
                     </div>
                   </div>

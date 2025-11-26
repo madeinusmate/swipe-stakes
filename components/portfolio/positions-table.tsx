@@ -17,21 +17,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Position, PositionStatus } from "@/lib/types";
 import { 
   ArrowUpDown, 
-  MoreHorizontal, 
-  TrendingUp, 
-  TrendingDown, 
   ExternalLink,
   BarChart3 
 } from "lucide-react";
@@ -77,12 +67,13 @@ function getStatusBadge(status: PositionStatus) {
 
 interface PositionsTableProps {
   positions: Position[];
+  className?: string;
 }
 
 type SortField = "value" | "profit" | "roi" | "shares" | "price" | "invested";
 type SortOrder = "asc" | "desc";
 
-export function PositionsTable({ positions }: PositionsTableProps) {
+export function PositionsTable({ positions, className }: PositionsTableProps) {
   const [sortField, setSortField] = useState<SortField>("value");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
@@ -113,7 +104,7 @@ export function PositionsTable({ positions }: PositionsTableProps) {
   };
 
   return (
-    <div className="rounded-md border border-border/50 overflow-hidden">
+    <div className={cn("rounded-md border border-border/50 overflow-hidden", className)}>
       <Table>
         <TableHeader className="bg-muted/30">
           <TableRow className="hover:bg-transparent border-border/50">
@@ -139,7 +130,6 @@ export function PositionsTable({ positions }: PositionsTableProps) {
                 Value <SortIcon field="value" />
               </div>
             </TableHead>
-            <TableHead className="text-right">Date</TableHead>
             <TableHead className="text-right cursor-pointer select-none" onClick={() => handleSort("profit")}>
                <div className="flex items-center justify-end">
                 P&L <SortIcon field="profit" />
@@ -171,7 +161,7 @@ export function PositionsTable({ positions }: PositionsTableProps) {
                 >
                   {/* Market Info */}
                   <TableCell className="align-top py-4">
-                    <Link href={`/markets/${(position as any).marketSlug}`} className="flex gap-3 group/market">
+                    <Link href={`/markets/${position.marketSlug}`} className="flex gap-3 group/market">
                       <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
                         {position.imageUrl ? (
                           <Image
@@ -188,7 +178,7 @@ export function PositionsTable({ positions }: PositionsTableProps) {
                       </div>
                       <div className="flex flex-col justify-center min-w-0">
                         <span className="font-medium text-sm truncate group-hover/market:text-primary transition-colors">
-                          {(position as any).marketTitle || `Market #${position.marketId}`}
+                          {position.marketTitle || `Market #${position.marketId}`}
                         </span>
                         <div className="flex items-center gap-2 mt-1">
                            <Badge variant="outline" className={cn("text-[10px] px-1.5 h-5 font-normal", statusConfig.className)}>
@@ -202,7 +192,7 @@ export function PositionsTable({ positions }: PositionsTableProps) {
                   {/* Outcome */}
                   <TableCell className="align-top py-4">
                     <Badge variant="secondary" className="font-medium">
-                      {(position as any).outcomeTitle || `Outcome #${position.outcomeId}`}
+                      {position.outcomeTitle || `Outcome #${position.outcomeId}`}
                     </Badge>
                   </TableCell>
 
@@ -218,18 +208,12 @@ export function PositionsTable({ positions }: PositionsTableProps) {
 
                   {/* Invested */}
                   <TableCell className="text-right align-top py-4 text-muted-foreground tabular-nums">
-                    {formatCurrency((position as any).invested)}
+                    {formatCurrency(position.invested ?? position.value - position.profit)}
                   </TableCell>
 
                   {/* Value */}
                   <TableCell className="text-right align-top py-4 font-medium tabular-nums">
                     {formatCurrency(position.value)}
-                  </TableCell>
-
-                  {/* Date (Placeholder for now) */}
-                  <TableCell className="text-right align-top py-4 text-muted-foreground tabular-nums text-xs whitespace-nowrap">
-                    {/* Fallback date since API doesn't provide creation date yet */}
-                    —
                   </TableCell>
 
                   {/* P&L */}
@@ -247,30 +231,13 @@ export function PositionsTable({ positions }: PositionsTableProps) {
 
                   {/* Actions */}
                   <TableCell className="align-top py-4 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/markets/${(position as any).marketSlug}`} className="cursor-pointer">
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            View Market
-                          </Link>
-                        </DropdownMenuItem>
-                        {canClaim && (
-                          <DropdownMenuItem asChild>
-                            <Link href={`/markets/${(position as any).marketSlug}`} className="cursor-pointer text-emerald-500 focus:text-emerald-500">
-                              <TrendingUp className="mr-2 h-4 w-4" />
-                              Claim Winnings
-                            </Link>
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Link 
+                      href={`/markets/${position.marketSlug}`} 
+                      className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    >
+                      <span className="sr-only">View market</span>
+                      <ExternalLink className="h-4 w-4" />
+                    </Link>
                   </TableCell>
                 </TableRow>
               );
