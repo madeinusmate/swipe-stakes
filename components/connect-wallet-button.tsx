@@ -72,12 +72,12 @@ export function ConnectWalletButton({
     return (
       <div className="flex items-center gap-4">
         <RainbowButton
-          className="hidden sm:flex gap-0 h-9 group relative overflow-hidden"
+          className="hidden sm:flex gap-2 h-9 group relative overflow-hidden pr-3"
           asChild
         >
           <a href="https://portal.abs.xyz/onramp" target="_blank" rel="noopener noreferrer">
             Deposit
-            <ArrowUpRight className="h-4 w-0 ml-0 transition-all duration-300 opacity-0 group-hover:w-4 group-hover:ml-2 group-hover:opacity-100" />
+            <ArrowUpRight className="h-4 w-4 ml-0.5 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" />
           </a>
         </RainbowButton>
 
