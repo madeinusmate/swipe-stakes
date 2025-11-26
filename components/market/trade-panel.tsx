@@ -44,7 +44,7 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
   const { status, address } = useAccount();
   const isConnected = status === "connected";
   const { apiBaseUrl, networkConfig } = useNetwork();
-  const { trade, isPending: isTrading, status: tradeStatus } = useTrade();
+  const { trade, isPending: isTrading, isConfirming, status: tradeStatus } = useTrade();
 
   // Form state
   const [action, setAction] = useState<TradeAction>("buy");
@@ -242,14 +242,16 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
                 "text-white"
               )}
               onClick={handleTrade}
-              disabled={!quote || isTrading || isLoadingQuote}
+              disabled={!quote || isTrading || isConfirming || isLoadingQuote}
             >
-              {isTrading
+              {isTrading || isConfirming
                 ? tradeStatus === "approving"
                   ? "Approving..."
                   : tradeStatus === "pending_signature"
                     ? "Confirm in wallet..."
-                    : "Processing..."
+                    : tradeStatus === "confirming"
+                      ? "Confirming..."
+                      : "Processing..."
                 : action === "buy" ? "Buy" : "Sell"}
             </Button>
           )}
@@ -261,50 +263,61 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
 
           {/* Stats Section */}
           <div className="pt-2 space-y-2 text-sm">
-            {isLoadingQuote ? (
-              <>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-              </>
-            ) : (
-              <>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Price change</span>
-                  <span className="text-foreground tabular-nums">
-                    {quote
-                      ? `${(quote.priceBefore * 100).toFixed(2)} pts → ${(quote.priceAfter * 100).toFixed(2)} pts`
-                      : "0.00 pts → 0.00 pts"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Shares</span>
-                  <span className="text-foreground tabular-nums">
-                    {quote?.shares.toFixed(2) ?? "0"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Avg. price</span>
-                  <span className="text-foreground tabular-nums">
-                    {quote ? `${(quote.priceAverage * 100).toFixed(2)} pts` : "0.00 pts"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Max profit</span>
-                  <span className={cn(
-                    "tabular-nums",
-                    maxProfit > 0 ? "text-emerald-500" : maxProfit < 0 ? "text-rose-500" : "text-foreground"
-                  )}>
-                    {maxProfit > 0 ? "+" : ""}{maxProfit.toFixed(2)} pts ({maxProfitPercent > 0 ? "+" : ""}{maxProfitPercent.toFixed(0)}%)
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Max payout</span>
-                  <span className="text-foreground tabular-nums">
-                    {quote?.shares.toFixed(2) ?? "0.00"} pts
-                  </span>
-                </div>
-              </>
-            )}
+            <div className="flex justify-between text-muted-foreground">
+              <span>Price change</span>
+              {isLoadingQuote ? (
+                <Skeleton className="h-4 w-32" />
+              ) : (
+                <span className="text-foreground tabular-nums">
+                  {quote
+                    ? `${(quote.priceBefore * 100).toFixed(2)} pts → ${(quote.priceAfter * 100).toFixed(2)} pts`
+                    : "0.00 pts → 0.00 pts"}
+                </span>
+              )}
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Shares</span>
+              {isLoadingQuote ? (
+                <Skeleton className="h-4 w-12" />
+              ) : (
+                <span className="text-foreground tabular-nums">
+                  {quote?.shares.toFixed(2) ?? "0"}
+                </span>
+              )}
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Avg. price</span>
+              {isLoadingQuote ? (
+                <Skeleton className="h-4 w-16" />
+              ) : (
+                <span className="text-foreground tabular-nums">
+                  {quote ? `${(quote.priceAverage * 100).toFixed(2)} pts` : "0.00 pts"}
+                </span>
+              )}
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Max profit</span>
+              {isLoadingQuote ? (
+                <Skeleton className="h-4 w-24" />
+              ) : (
+                <span className={cn(
+                  "tabular-nums",
+                  maxProfit > 0 ? "text-emerald-500" : maxProfit < 0 ? "text-rose-500" : "text-foreground"
+                )}>
+                  {maxProfit > 0 ? "+" : ""}{maxProfit.toFixed(2)} pts ({maxProfitPercent > 0 ? "+" : ""}{maxProfitPercent.toFixed(0)}%)
+                </span>
+              )}
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Max payout</span>
+              {isLoadingQuote ? (
+                <Skeleton className="h-4 w-16" />
+              ) : (
+                <span className="text-foreground tabular-nums">
+                  {quote?.shares.toFixed(2) ?? "0.00"} pts
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

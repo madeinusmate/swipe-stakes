@@ -200,7 +200,7 @@ export function useTrade() {
         setBundleId(null); // Clear bundle ID
       }, 3000);
     }
-  }, [callsStatus, queryClient, address, apiBaseUrl]);
+  }, [callsStatus, queryClient, address, apiBaseUrl, currentAction]);
 
   const mutation = useMutation({
     mutationFn: async (params: TradeParams): Promise<TradeResult> => {
