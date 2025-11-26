@@ -232,6 +232,7 @@ export function useTrade() {
       const sharesThresholdInDecimals = parseUnits(params.sharesThreshold.toString(), tokenDecimals);
       
       console.log("Trade params:", {
+        action: params.action,
         marketId: params.marketId,
         outcomeId: params.outcomeId,
         value: params.value,
@@ -240,6 +241,10 @@ export function useTrade() {
         sharesThresholdInDecimals: sharesThresholdInDecimals.toString(),
         tokenDecimals,
         referralCode: REFERRAL_CODE,
+        // For debugging: show what the contract args will be
+        contractArgs: params.action === "buy" 
+          ? `referralBuy(${params.marketId}, ${params.outcomeId}, ${sharesThresholdInDecimals} minShares, ${valueInDecimals} value, "${REFERRAL_CODE}")`
+          : `referralSell(${params.marketId}, ${params.outcomeId}, ${valueInDecimals} value, ${sharesThresholdInDecimals} maxShares, "${REFERRAL_CODE}")`,
       });
 
       if (params.action === "buy") {

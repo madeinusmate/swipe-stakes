@@ -95,12 +95,18 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
     return position?.shares ?? 0;
   }, [portfolioData, selectedOutcomeId]);
 
-  // Available balance based on action
-  const availableBalance = action === "buy" ? usdcBalance : sharesBalance;
+  // Calculate USD value of shares (shares × current price)
+  const sharesValueUsd = useMemo(() => {
+    if (!selectedOutcome || sharesBalance <= 0) return 0;
+    return sharesBalance * selectedOutcome.price;
+  }, [sharesBalance, selectedOutcome]);
 
-  // Handle percentage button clicks
+  // Available balance in USD for both buy and sell
+  const availableBalanceUsd = action === "buy" ? usdcBalance : sharesValueUsd;
+
+  // Handle percentage button clicks (now always in USD)
   const handlePercentageClick = (percent: number) => {
-    const value = availableBalance * (percent / 100);
+    const value = availableBalanceUsd * (percent / 100);
     if (value > 0) {
       setAmount(value.toFixed(2));
     }
@@ -118,11 +124,25 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
     setQuoteError(null);
 
     try {
+      // Both buy and sell now use USD input
       // For buy: amount is USDC value to spend
-      // For sell: amount is number of shares to sell
-      const quoteParams = action === "buy" 
-        ? { value: parsedAmount }
-        : { shares: parsedAmount };
+      // For sell: amount is USD value to sell, convert to shares
+      let quoteParams: { value?: number; shares?: number };
+      
+      if (action === "buy") {
+        quoteParams = { value: parsedAmount };
+      } else {
+        // Convert USD value to shares: shares = usd / price
+        const price = selectedOutcome?.price ?? 0;
+        if (price <= 0) {
+          setQuoteError("Invalid price");
+          setQuote(null);
+          setIsLoadingQuote(false);
+          return;
+        }
+        const sharesToSell = parsedAmount / price;
+        quoteParams = { shares: sharesToSell };
+      }
 
       const newQuote = await getQuote(apiBaseUrl, {
         marketId: market.id,
@@ -139,7 +159,7 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
     } finally {
       setIsLoadingQuote(false);
     }
-  }, [apiBaseUrl, market.id, networkConfig.id, selectedOutcomeId, action, amount]);
+  }, [apiBaseUrl, market.id, networkConfig.id, selectedOutcomeId, action, amount, selectedOutcome?.price]);
 
   // Debounced quote fetch
   useEffect(() => {
@@ -152,14 +172,22 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
     if (!quote || !amount) return;
 
     try {
-      // For buy: value is USDC amount to spend
-      // For sell: value is USDC amount to receive (from quote)
+      // For buy: value is USDC amount to spend, sharesThreshold is min shares to receive
+      // For sell: value is USDC amount to receive, sharesThreshold should be max shares to sell
+      // 
+      // NOTE: The API's shares_threshold for sell is actually a minimum VALUE threshold,
+      // not a shares threshold. So for sell, we calculate maxOutcomeSharesToSell ourselves
+      // as shares * (1 + slippage) to allow for some flexibility in execution.
+      const sharesThreshold = action === "sell" 
+        ? quote.shares * 1.01  // Max shares to sell (with 1% buffer)
+        : quote.sharesThreshold;  // Min shares to receive (from API)
+
       await trade({
         action,
         marketId: market.id,
         outcomeId: selectedOutcomeId,
         value: quote.value,
-        sharesThreshold: quote.sharesThreshold,
+        sharesThreshold,
         tokenAddress: market.tokenAddress,
         tokenDecimals: 6, // USDC uses 6 decimals
       });
@@ -288,10 +316,7 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
                 <span className="text-sm text-muted-foreground">
                   Available{" "}
                   <span className="text-foreground font-medium">
-                    {action === "buy" 
-                      ? `$${availableBalance.toFixed(2)}`
-                      : `${availableBalance.toFixed(2)} shares`
-                    }
+                    ${availableBalanceUsd.toFixed(2)}
                   </span>
                 </span>
               )}
@@ -299,7 +324,7 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {action === "buy" ? "$" : ""}
+                  $
                 </span>
                 <Input
                   type="number"
@@ -309,10 +334,7 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
                   disabled={!isMarketOpen}
                   min="0"
                   step="0.01"
-                  className={cn(
-                    "bg-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-                    action === "buy" && "pl-7"
-                  )}
+                  className="bg-background pl-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
               <div className="flex gap-1">
@@ -324,7 +346,7 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
                     size="sm"
                     className="px-2 h-9 text-xs"
                     onClick={() => handlePercentageClick(percent)}
-                    disabled={!isMarketOpen || !isConnected || availableBalance <= 0}
+                    disabled={!isMarketOpen || !isConnected || availableBalanceUsd <= 0}
                   >
                     {percent}%
                   </Button>
