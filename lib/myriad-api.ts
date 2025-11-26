@@ -19,6 +19,8 @@ import type {
   MarketEventsResponse,
   PortfolioQueryParams,
   PortfolioResponse,
+  UserEventsQueryParams,
+  UserEventsResponse,
   ApiError,
 } from "./types";
 import type { QuoteRequest, Quote, ClaimRequest, ClaimResponse } from "./types";
@@ -248,6 +250,30 @@ export async function getUserPortfolio(
     tokenAddress: params.tokenAddress,
   });
   return toCamelCase(response) as PortfolioResponse;
+}
+
+/**
+ * Fetch a user's trade events (activity history).
+ *
+ * @param baseUrl - API base URL
+ * @param address - User's wallet address
+ * @param params - Query parameters
+ * @returns Paginated list of user events
+ */
+export async function getUserEvents(
+  baseUrl: string,
+  address: string,
+  params: UserEventsQueryParams = {}
+): Promise<UserEventsResponse> {
+  const response = await apiGet<UserEventsResponse>(baseUrl, `/users/${address}/events`, {
+    page: params.page ?? 1,
+    limit: params.limit ?? DEFAULT_PAGE_SIZE,
+    marketId: params.marketId,
+    networkId: params.networkId,
+    since: params.since,
+    until: params.until,
+  });
+  return toCamelCase(response) as UserEventsResponse;
 }
 
 // =============================================================================

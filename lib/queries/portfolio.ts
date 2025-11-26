@@ -11,9 +11,9 @@
  * ```
  */
 
-import { queryOptions } from "@tanstack/react-query";
-import { getUserPortfolio } from "@/lib/myriad-api";
-import type { PortfolioQueryParams } from "@/lib/types";
+import { queryOptions, infiniteQueryOptions } from "@tanstack/react-query";
+import { getUserPortfolio, getUserEvents } from "@/lib/myriad-api";
+import type { PortfolioQueryParams, UserEventsQueryParams } from "@/lib/types";
 
 // =============================================================================
 // Query Keys
@@ -30,6 +30,9 @@ export const portfolioKeys = {
   /** Key for filtered portfolio query */
   filtered: (baseUrl: string, address: string, params: PortfolioQueryParams) =>
     [...portfolioKeys.user(baseUrl, address), params] as const,
+  /** Key for user events */
+  events: (baseUrl: string, address: string, params: UserEventsQueryParams) =>
+    [...portfolioKeys.user(baseUrl, address), "events", params] as const,
 };
 
 // =============================================================================
@@ -75,6 +78,31 @@ export function portfolioQueryOptions(
     // Refetch on window focus to catch external changes
     refetchOnWindowFocus: true,
     // Only fetch when we have both baseUrl and address
+    enabled: Boolean(baseUrl && address),
+  });
+}
+
+/**
+ * Query options for fetching a user's activity feed (infinite scroll).
+ *
+ * @param baseUrl - API base URL
+ * @param address - User's wallet address
+ * @param params - Filter parameters
+ */
+export function userEventsInfiniteQueryOptions(
+  baseUrl: string,
+  address: string,
+  params: UserEventsQueryParams = {}
+) {
+  return infiniteQueryOptions({
+    queryKey: portfolioKeys.events(baseUrl, address, { ...params, page: undefined }),
+    queryFn: ({ pageParam }) => getUserEvents(baseUrl, address, { ...params, page: pageParam as number }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      return lastPage.pagination.hasNext ? lastPage.pagination.page + 1 : undefined;
+    },
+    staleTime: 15 * 1000,
+    refetchOnWindowFocus: true,
     enabled: Boolean(baseUrl && address),
   });
 }

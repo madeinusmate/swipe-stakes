@@ -40,6 +40,8 @@ export interface Position {
   price: number;
   /** Current value (shares * current price) */
   value: number;
+  /** Original invested amount (value - profit) */
+  invested?: number;
   /** Unrealized profit/loss */
   profit: number;
   /** Return on investment as decimal (null if not computable) */
