@@ -103,6 +103,7 @@ export function TradePanel({ market, selectedOutcomeId, onOutcomeChange }: Trade
         value: parseFloat(amount),
         sharesThreshold: quote.sharesThreshold,
         tokenAddress: market.tokenAddress,
+        tokenDecimals: 6, // USDC uses 6 decimals
       });
 
       // Reset form on success

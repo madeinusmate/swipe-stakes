@@ -4,34 +4,62 @@
  * Trade Mutation Hook
  *
  * TanStack Query mutation for executing buy/sell trades on Myriad.
- * Handles the complete trade flow:
- * 1. Check token approval
- * 2. Approve if needed
- * 3. Execute the trade
- * 4. Invalidate relevant caches
+ * Uses EIP-5792 sendCalls to batch approval + trade in a single popup.
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAccount } from "wagmi";
-import { useCallback, useState } from "react";
-import { transformEIP1193Provider } from "@abstract-foundation/agw-client";
-import type { EIP1193Provider } from "viem";
+import { useAccount, useSendCalls, useCallsStatus } from "wagmi";
+import { useCallback, useState, useEffect } from "react";
+import { encodeFunctionData, parseUnits, type Hex } from "viem";
+import { useAbstractClient } from "@abstract-foundation/agw-react";
 import { useNetwork } from "@/lib/network-context";
-import { REFERRAL_CODE, TOKENS } from "@/lib/config";
-import { chain } from "@/config/chain";
-import {
-  initializeSdk,
-  getErc20Contract,
-  checkApproval,
-  approveToken,
-  executeBuy,
-  executeSell,
-  type BuyParams,
-  type SellParams,
-} from "@/lib/myriad-sdk";
+import { TOKENS, REFERRAL_CODE } from "@/lib/config";
 import { marketKeys } from "@/lib/queries";
 import { portfolioKeys } from "@/lib/queries/portfolio";
 import type { TradeAction, TransactionStatus } from "@/lib/types";
+
+// =============================================================================
+// ABIs
+// =============================================================================
+
+const ERC20_ABI = [
+  {
+    name: "approve",
+    type: "function",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+] as const;
+
+const PREDICTION_MARKET_ABI = [
+  {
+    name: "referralBuy",
+    type: "function",
+    inputs: [
+      { name: "marketId", type: "uint256" },
+      { name: "outcomeId", type: "uint256" },
+      { name: "minOutcomeSharesToBuy", type: "uint256" },
+      { name: "value", type: "uint256" },
+      { name: "code", type: "string" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "referralSell",
+    type: "function",
+    inputs: [
+      { name: "marketId", type: "uint256" },
+      { name: "outcomeId", type: "uint256" },
+      { name: "value", type: "uint256" },
+      { name: "maxOutcomeSharesToSell", type: "uint256" },
+      { name: "code", type: "string" },
+    ],
+    outputs: [],
+  },
+] as const;
 
 // =============================================================================
 // Types
@@ -50,10 +78,14 @@ export interface TradeParams {
   sharesThreshold: number;
   /** Token contract address */
   tokenAddress: string;
+  /** Token decimals (default 6 for USDC) */
+  tokenDecimals?: number;
+  /** Pre-encoded calldata from the quote API (deprecated - we encode locally now) */
+  calldata?: string;
 }
 
 interface TradeResult {
-  /** Transaction hash */
+  /** Transaction/bundle hash */
   hash: string;
   /** Action performed */
   action: TradeAction;
@@ -65,158 +97,172 @@ interface TradeResult {
 
 /**
  * Hook for executing trades (buy/sell) on Myriad.
- *
- * Provides:
- * - `trade()` function to execute trades
- * - Loading and error states
- * - Transaction status tracking
- *
- * @example
- * ```tsx
- * function TradeButton({ marketId, outcomeId, quote }) {
- *   const { trade, isPending, status } = useTrade();
- *
- *   const handleTrade = async () => {
- *     await trade({
- *       action: "buy",
- *       marketId,
- *       outcomeId,
- *       value: 100,
- *       sharesThreshold: quote.sharesThreshold,
- *       tokenAddress: market.tokenAddress,
- *     });
- *   };
- *
- *   return (
- *     <button onClick={handleTrade} disabled={isPending}>
- *       {status === "approving" ? "Approving..." : isPending ? "Trading..." : "Buy"}
- *     </button>
- *   );
- * }
- * ```
+ * Uses EIP-5792 sendCalls to batch approval + trade in a single wallet popup.
  */
 export function useTrade() {
-  const { address, connector } = useAccount();
+  const { address } = useAccount();
+  const { data: abstractClient } = useAbstractClient();
   const { contracts, apiBaseUrl } = useNetwork();
   const queryClient = useQueryClient();
+  const { sendCalls, data: bundleId, isPending: isSending, error: sendError } = useSendCalls();
+  
+  // Extract the bundle ID string from the sendCalls result
+  const bundleIdString = typeof bundleId === "object" && bundleId !== null 
+    ? bundleId.id 
+    : bundleId;
+  
+  // Track bundle status
+  const { data: callsStatus } = useCallsStatus({
+    id: bundleIdString as string,
+    query: {
+      enabled: !!bundleIdString,
+      refetchInterval: (data) => 
+        data.state.data?.status === "pending" ? 1000 : false,
+    },
+  });
 
   // Track detailed transaction status
   const [status, setStatus] = useState<TransactionStatus>("idle");
+  const [currentAction, setCurrentAction] = useState<TradeAction | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: async (params: TradeParams): Promise<TradeResult> => {
-      if (!address) throw new Error("Wallet not connected");
-      if (!connector) throw new Error("No wallet connector available");
-
-      // Get the raw EIP-1193 provider from the connector
-      const rawProvider = await connector.getProvider();
-
-      // Transform the provider to be AGW-compatible
-      // This is required for Abstract Global Wallet to properly handle transactions
-      // isPrivyCrossApp ensures the smart account address is used for gas estimation
-      const provider = transformEIP1193Provider({
-        provider: rawProvider as EIP1193Provider,
-        chain: chain,
-        isPrivyCrossApp: true,
-      });
-
-      // Initialize SDK with the transformed AGW provider
-      const sdk = await initializeSdk(provider);
-
-      // Use the provided token address, or fall back to USDC as default
-      const tokenAddress = params.tokenAddress || TOKENS.USDC.address;
-      
-      if (!tokenAddress) {
-        throw new Error("No token address available for this market");
-      }
-
-      // Get ERC20 contract for approval checks
-      const erc20 = await getErc20Contract(sdk.app, tokenAddress);
-
-      // For buys, we need to ensure token approval
-      if (params.action === "buy") {
-        setStatus("approving");
-        
-        // Always attempt approval - this ensures we have sufficient allowance
-        // The approval transaction will prompt the user's wallet
-        // Use a large but safe approval amount (1 trillion tokens with 6 decimals = 1e18)
-        // This avoids ABI encoding issues with max uint256
-        const maxApproval = "1000000000000000000";
-        
-        console.log("Requesting token approval for address:", address);
-        console.log("Token address:", tokenAddress);
-        console.log("Spender (prediction market):", contracts.predictionMarket);
-        
-        try {
-          const approvalResult = await approveToken(
-            erc20,
-            maxApproval,
-            contracts.predictionMarket
-          );
-          
-          console.log("Approval transaction result:", approvalResult);
-          
-          // Wait for the approval transaction to be confirmed
-          // This is important - we need the approval to be on-chain before trading
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          
-          console.log("Approval confirmed, proceeding with trade...");
-        } catch (e) {
-          console.error("Approval failed:", e);
-          throw new Error(`Token approval failed: ${e instanceof Error ? e.message : String(e)}`);
-        }
-      }
-
-      // Execute the trade
-      setStatus("pending_signature");
-
-      let result;
-      if (params.action === "buy") {
-        const buyParams: BuyParams = {
-          marketId: params.marketId,
-          outcomeId: params.outcomeId,
-          value: params.value,
-          minOutcomeSharesToBuy: params.sharesThreshold,
-        };
-        result = await executeBuy(sdk.pm, buyParams, REFERRAL_CODE || undefined);
-      } else {
-        const sellParams: SellParams = {
-          marketId: params.marketId,
-          outcomeId: params.outcomeId,
-          value: params.value,
-          maxOutcomeSharesToSell: params.sharesThreshold,
-        };
-        result = await executeSell(sdk.pm, sellParams, REFERRAL_CODE || undefined);
-      }
-
-      setStatus("confirming");
-
-      return {
-        hash: result.transactionHash || result.hash || "unknown",
-        action: params.action,
-      };
-    },
-
-    onSuccess: (data, variables) => {
+  // Update status based on calls status
+  useEffect(() => {
+    if (callsStatus?.status === "success") {
       setStatus("confirmed");
-
-      // Invalidate relevant caches to refresh data
+      
+      // Invalidate caches on success
       queryClient.invalidateQueries({ queryKey: marketKeys.all });
-
       if (address) {
         queryClient.invalidateQueries({
           queryKey: portfolioKeys.user(apiBaseUrl, address),
         });
       }
+      
+      // Reset after delay
+      setTimeout(() => {
+        setStatus("idle");
+        setCurrentAction(null);
+      }, 3000);
+    }
+  }, [callsStatus?.status, queryClient, address, apiBaseUrl]);
+
+  const mutation = useMutation({
+    mutationFn: async (params: TradeParams): Promise<TradeResult> => {
+      if (!address) throw new Error("Wallet not connected");
+      if (!abstractClient) throw new Error("Abstract client not available");
+
+      setCurrentAction(params.action);
+      
+      // Use the provided token address, or fall back to USDC as default
+      const tokenAddress = (params.tokenAddress || TOKENS.USDC.address) as Hex;
+      const predictionMarketAddress = contracts.predictionMarket as Hex;
+      
+      if (!tokenAddress) {
+        throw new Error("No token address available for this market");
+      }
+
+      // Use token decimals (default to 6 for USDC)
+      const tokenDecimals = params.tokenDecimals ?? 6;
+
+      // Large approval amount (1 trillion for the token)
+      const approvalAmount = parseUnits("1000000000000", tokenDecimals);
+
+      // Build the calls array
+      const calls: Array<{ to: Hex; data: Hex; value?: bigint }> = [];
+      
+      // Convert value and sharesThreshold to the correct decimals
+      // The contract expects both in token decimals (e.g., 6 for USDC)
+      const valueInDecimals = parseUnits(params.value.toString(), tokenDecimals);
+      const sharesThresholdInDecimals = parseUnits(params.sharesThreshold.toString(), tokenDecimals);
+      
+      console.log("Trade params:", {
+        marketId: params.marketId,
+        outcomeId: params.outcomeId,
+        value: params.value,
+        valueInDecimals: valueInDecimals.toString(),
+        sharesThreshold: params.sharesThreshold,
+        sharesThresholdInDecimals: sharesThresholdInDecimals.toString(),
+        tokenDecimals,
+        referralCode: REFERRAL_CODE,
+      });
+
+      if (params.action === "buy") {
+        setStatus("approving");
+        
+        // 1. Approval call
+        const approveData = encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [predictionMarketAddress, approvalAmount],
+        });
+        
+        calls.push({
+          to: tokenAddress,
+          data: approveData,
+        });
+
+        // 2. Buy call - encode locally with correct decimals
+        const buyData = encodeFunctionData({
+          abi: PREDICTION_MARKET_ABI,
+          functionName: "referralBuy",
+          args: [
+            BigInt(params.marketId),
+            BigInt(params.outcomeId),
+            sharesThresholdInDecimals, // minOutcomeSharesToBuy
+            valueInDecimals, // value in token decimals
+            REFERRAL_CODE || "", // referral code
+          ],
+        });
+        
+        calls.push({
+          to: predictionMarketAddress,
+          data: buyData,
+        });
+      } else {
+        // Sell - no approval needed, encode locally
+        setStatus("pending_signature");
+        
+        const sellData = encodeFunctionData({
+          abi: PREDICTION_MARKET_ABI,
+          functionName: "referralSell",
+          args: [
+            BigInt(params.marketId),
+            BigInt(params.outcomeId),
+            valueInDecimals, // value to receive in token decimals
+            sharesThresholdInDecimals, // maxOutcomeSharesToSell
+            REFERRAL_CODE || "", // referral code
+          ],
+        });
+        
+        calls.push({
+          to: predictionMarketAddress,
+          data: sellData,
+        });
+      }
+
+      console.log("Sending batched calls:", calls);
+      setStatus("pending_signature");
+
+      // Send batched calls - single wallet popup!
+      // sendCalls is async but returns void - the bundleId comes from the hook state
+      await sendCalls({
+        calls,
+      });
+
+      setStatus("confirming");
+
+      return {
+        hash: bundleIdString || "pending",
+        action: params.action,
+      };
     },
 
     onError: () => {
       setStatus("failed");
-    },
-
-    onSettled: () => {
-      // Reset status after a delay
-      setTimeout(() => setStatus("idle"), 3000);
+      setTimeout(() => {
+        setStatus("idle");
+        setCurrentAction(null);
+      }, 3000);
     },
   });
 
@@ -228,12 +274,13 @@ export function useTrade() {
   return {
     trade,
     status,
-    isPending: mutation.isPending,
-    isSuccess: mutation.isSuccess,
-    isError: mutation.isError,
-    error: mutation.error,
+    isPending: mutation.isPending || isSending,
+    isSuccess: callsStatus?.status === "success",
+    isError: mutation.isError || !!sendError,
+    error: mutation.error || sendError,
     data: mutation.data,
     reset: mutation.reset,
+    bundleId: bundleIdString,
+    callsStatus,
   };
 }
-
