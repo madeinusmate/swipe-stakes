@@ -2,16 +2,6 @@
  * Market Components
  *
  * Re-exports all market-related components for convenient importing.
- *
- * @example
- * import {
- *   PriceChart,
- *   TradePanel,
- *   MarketHeader,
- *   MarketRules,
- *   MarketTimeline,
- *   OutcomeLegend,
- * } from "@/components/market";
  */
 
 // Main market components

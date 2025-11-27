@@ -5,21 +5,6 @@
  *
  * A flexible empty state component for displaying when no data is available.
  * Supports custom icons, titles, descriptions, and action buttons.
- *
- * @example
- * // Basic usage
- * <EmptyState
- *   title="No markets found"
- *   description="Try adjusting your filters."
- * />
- *
- * // With custom icon and action
- * <EmptyState
- *   icon={<LayoutList className="h-8 w-8" />}
- *   title="No Positions Yet"
- *   description="Start trading to build your portfolio."
- *   action={<Button asChild><Link href="/">Browse Markets</Link></Button>}
- * />
  */
 
 import { ReactNode } from "react";

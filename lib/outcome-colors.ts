@@ -3,12 +3,6 @@
  *
  * Provides consistent color theming for market outcomes across the UI.
  * Standardizes the color logic for Yes/No binary markets and multi-outcome markets.
- *
- * @example
- * import { getOutcomeColor, OUTCOME_COLORS } from "@/lib/outcome-colors";
- *
- * const color = getOutcomeColor(outcome.title, index);
- * // Returns "#10b981" for "yes", "#f43f5e" for "no", or chart color for others
  */
 
 // =============================================================================
@@ -51,11 +45,6 @@ export const CHART_COLORS = [
  * @param title - The outcome title (e.g., "Yes", "No", "Option A")
  * @param index - The outcome's index position (used for chart color fallback)
  * @returns CSS color value (hex or var())
- *
- * @example
- * getOutcomeColor("Yes", 0);      // "#10b981"
- * getOutcomeColor("No", 1);       // "#f43f5e"
- * getOutcomeColor("Option A", 0); // "var(--chart-1)"
  */
 export function getOutcomeColor(title: string, index: number): string {
   const lowerTitle = title.toLowerCase();
@@ -72,10 +61,6 @@ export function getOutcomeColor(title: string, index: number): string {
  *
  * @param title - The outcome title
  * @returns Object with Tailwind class names for different style properties
- *
- * @example
- * const classes = getOutcomeClasses("Yes");
- * // { bg: "bg-emerald-500", text: "text-emerald-500", border: "border-emerald-500" }
  */
 export function getOutcomeClasses(title: string): {
   bg: string;
@@ -117,10 +102,6 @@ export function getOutcomeClasses(title: string): {
  *
  * @param title - The outcome title
  * @returns True if the outcome is considered "positive"
- *
- * @example
- * isPositiveOutcome("Yes"); // true
- * isPositiveOutcome("No");  // false
  */
 export function isPositiveOutcome(title: string): boolean {
   return title.toLowerCase() === "yes";
@@ -131,10 +112,6 @@ export function isPositiveOutcome(title: string): boolean {
  *
  * @param outcomes - Array of outcomes with title and price
  * @returns Sorted array with Yes first (for binary) or by price (for multi)
- *
- * @example
- * sortBinaryOutcomes([{ title: "No", ... }, { title: "Yes", ... }]);
- * // [{ title: "Yes", ... }, { title: "No", ... }]
  */
 export function sortBinaryOutcomes<T extends { title: string; price: number }>(
   outcomes: T[]

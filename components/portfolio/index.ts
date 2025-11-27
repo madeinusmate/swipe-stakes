@@ -1,14 +1,6 @@
 /**
  * Portfolio Components
- *
  * Re-exports all portfolio-related components for convenient importing.
- *
- * @example
- * import {
- *   PositionsTable,
- *   ActivityFeed,
- *   ProfileHeader,
- * } from "@/components/portfolio";
  */
 
 // Main portfolio components

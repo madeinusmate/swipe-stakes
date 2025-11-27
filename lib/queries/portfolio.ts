@@ -3,12 +3,6 @@
  *
  * TanStack Query options for fetching user portfolio data.
  * Portfolio queries require a connected wallet address.
- *
- * @example
- * ```tsx
- * const { address } = useAccount();
- * const { data } = useQuery(portfolioQueryOptions(apiBaseUrl, address!, { networkId: 2741 }));
- * ```
  */
 
 import { queryOptions, infiniteQueryOptions } from "@tanstack/react-query";
@@ -45,25 +39,6 @@ export const portfolioKeys = {
  * @param baseUrl - API base URL
  * @param address - User's wallet address
  * @param params - Filter parameters (networkId, tokenAddress, etc.)
- *
- * @example
- * ```tsx
- * function Portfolio() {
- *   const { apiBaseUrl, networkConfig } = useNetwork();
- *   const { address } = useAccount();
- *
- *   const { data, isPending } = useQuery(
- *     portfolioQueryOptions(apiBaseUrl, address!, {
- *       networkId: networkConfig.id,
- *     })
- *   );
- *
- *   if (!address) return <ConnectWalletPrompt />;
- *   if (isPending) return <Skeleton />;
- *
- *   return <PositionsList positions={data.data} />;
- * }
- * ```
  */
 export function portfolioQueryOptions(
   baseUrl: string,

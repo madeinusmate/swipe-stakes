@@ -139,15 +139,6 @@ function toCamelCase(obj: unknown): unknown {
  * @param baseUrl - API base URL (from network context)
  * @param params - Query parameters for filtering/sorting
  * @returns Paginated list of markets
- *
- * @example
- * ```ts
- * const markets = await getMarkets(apiBaseUrl, {
- *   state: "open",
- *   sort: "volume_24h",
- *   limit: 20,
- * });
- * ```
  */
 export async function getMarkets(baseUrl: string, params: MarketsQueryParams = {}): Promise<MarketsResponse> {
   const response = await apiGet<MarketsResponse>(baseUrl, "/markets", {
@@ -172,15 +163,6 @@ export async function getMarkets(baseUrl: string, params: MarketsQueryParams = {
  * @param slugOrId - Market slug (string) or market ID (number)
  * @param networkId - Required when using market ID
  * @returns Full market details including price charts
- *
- * @example
- * ```ts
- * // By slug
- * const market = await getMarket(apiBaseUrl, "will-eth-reach-5000");
- *
- * // By ID
- * const market = await getMarket(apiBaseUrl, 164, 2741);
- * ```
  */
 export async function getMarket(
   baseUrl: string,
@@ -204,13 +186,6 @@ export async function getMarket(
  * @param address - User's wallet address
  * @param params - Query parameters for filtering
  * @returns Paginated list of positions
- *
- * @example
- * ```ts
- * const portfolio = await getUserPortfolio(apiBaseUrl, "0x123...", {
- *   networkId: 2741,
- * });
- * ```
  */
 export async function getUserPortfolio(
   baseUrl: string,
@@ -268,18 +243,6 @@ export async function getUserEvents(
  * @param baseUrl - API base URL
  * @param request - Quote request parameters
  * @returns Quote with calldata
- *
- * @example
- * ```ts
- * const quote = await getQuote(apiBaseUrl, {
- *   marketId: 164,
- *   networkId: 2741,
- *   outcomeId: 0,
- *   action: "buy",
- *   value: 100, // Buy with 100 tokens
- *   slippage: 0.01, // 1% slippage tolerance
- * });
- * ```
  */
 export async function getQuote(baseUrl: string, request: QuoteRequest): Promise<Quote> {
   // Transform request to API format (snake_case)
@@ -331,14 +294,6 @@ export async function getQuote(baseUrl: string, request: QuoteRequest): Promise<
  * @param baseUrl - API base URL
  * @param request - Claim request parameters
  * @returns Claim action and calldata
- *
- * @example
- * ```ts
- * const claim = await getClaim(apiBaseUrl, {
- *   marketId: 164,
- *   networkId: 2741,
- * });
- * ```
  */
 export async function getClaim(baseUrl: string, request: ClaimRequest): Promise<ClaimResponse> {
   const body: Record<string, unknown> = {};

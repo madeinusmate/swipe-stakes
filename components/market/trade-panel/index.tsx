@@ -11,13 +11,6 @@
  * - OutcomeSelector: Outcome selection list
  * - AmountInput: Trade amount with percentage shortcuts
  * - QuoteStats: Quote preview statistics
- *
- * @example
- * <TradePanel
- *   market={market}
- *   selectedOutcomeId={selectedOutcomeId}
- *   onOutcomeChange={setSelectedOutcomeId}
- * />
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";

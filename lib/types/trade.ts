@@ -53,7 +53,6 @@ export interface QuoteRequest {
   /**
    * Slippage tolerance (0-1).
    * Default is 0.005 (0.5%).
-   * @example 0.01 for 1% slippage
    */
   slippage?: number;
 }

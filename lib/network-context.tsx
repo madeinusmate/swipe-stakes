@@ -41,13 +41,6 @@ interface NetworkProviderProps {
 
 /**
  * Provider component for network configuration.
- *
- * @example
- * ```tsx
- * <NetworkProvider>
- *   <App />
- * </NetworkProvider>
- * ```
  */
 export function NetworkProvider({ children }: NetworkProviderProps) {
   const value: NetworkContextValue = {
@@ -66,14 +59,6 @@ export function NetworkProvider({ children }: NetworkProviderProps) {
 
 /**
  * Hook to access network context.
- *
- * @example
- * ```tsx
- * function MyComponent() {
- *   const { networkConfig, apiBaseUrl } = useNetwork();
- *   return <div>Connected to {networkConfig.name}</div>;
- * }
- * ```
  */
 export function useNetwork() {
   const context = useContext(NetworkContext);

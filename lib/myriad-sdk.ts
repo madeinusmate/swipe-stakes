@@ -57,14 +57,6 @@ async function getPolkamarketsJs() {
  *
  * @param provider - EIP-1193 provider from wallet connector
  * @returns Initialized SDK instance
- *
- * @example
- * ```ts
- * const provider = await connector.getProvider();
- * const sdk = await initializeSdk(provider);
- *
- * // Now use sdk.pm.buy(), sdk.pm.sell(), etc.
- * ```
  */
 /**
  * Clean transaction parameters for AGW compatibility.

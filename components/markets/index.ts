@@ -1,14 +1,6 @@
 /**
  * Markets Components
- *
  * Re-exports all markets listing components for convenient importing.
- *
- * @example
- * import {
- *   MarketCard,
- *   MarketList,
- *   MarketFilters,
- * } from "@/components/markets";
  */
 
 export { MarketCard } from "./market-card";

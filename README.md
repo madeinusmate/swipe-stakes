@@ -8,14 +8,14 @@ A developer-friendly starter kit for building prediction market applications on 
 - **Market Details** - View outcomes, price charts, and trading history
 - **Trading** - Buy and sell outcome shares with real-time quotes
 - **Portfolio** - Track positions, P&L, and claim winnings
-- **Wallet Support** - Abstract Global Wallet (AGW) + standard wallets via RainbowKit
+- **Wallet Support** - Abstract Global Wallet (AGW) for seamless onboarding
 - **Abstract Mainnet** - Production-ready on Abstract
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router)
 - **Styling**: Tailwind CSS v4 + shadcn/ui
-- **Wallet**: RainbowKit + wagmi + viem
+- **Wallet**: Abstract Global Wallet (AGW) + wagmi + viem
 - **Data**: TanStack Query + Myriad REST API
 - **Smart Contracts**: polkamarkets-js SDK
 
@@ -72,18 +72,21 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 │  └── polkamarkets-js SDK (on-chain transactions)                │
 ├─────────────────────────────────────────────────────────────────┤
 │  Wallet Layer                                                    │
-│  ├── RainbowKit (connection UI)                                 │
+│  ├── Abstract Global Wallet (connection UI)                     │
 │  ├── wagmi (React hooks)                                        │
-│  └── AGW Connector (Abstract Global Wallet)                     │
+│  └── viem (blockchain interactions)                             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Project Structure
 
 ```
+config/
+  chain.ts            # Chain configuration
+  wagmi.ts            # Wallet configuration
+
 lib/
   config.ts           # Network config, contract addresses
-  wagmi.ts            # Wallet configuration
   myriad-api.ts       # REST API client
   myriad-sdk.ts       # polkamarkets-js wrapper
   network-context.tsx # Network configuration provider
@@ -111,14 +114,14 @@ app/
 The starter kit uses shadcn/ui with a neutral theme. Customize in:
 
 - `app/globals.css` - CSS variables for colors, radius, etc.
-- `app/providers.tsx` - RainbowKit theme configuration
+- `components/agw-provider.tsx` - Abstract Global Wallet provider configuration
 
 ### Adding Networks
 
 To add support for other Myriad-supported chains (Linea, BNB Chain):
 
 1. Add chain config to `lib/config.ts`
-2. Add chain to `lib/wagmi.ts`
+2. Add chain to `config/wagmi.ts` and `config/chain.ts`
 3. Update network context to include new chains
 
 ### Custom Components
@@ -129,6 +132,12 @@ All components follow a consistent pattern:
 - JSDoc comments explaining usage
 
 ## Key Files Explained
+
+### `config/wagmi.ts`
+Wagmi client configuration with:
+- Chain setup (Abstract mainnet)
+- Abstract Global Wallet connector
+- HTTP transports for RPC
 
 ### `lib/config.ts`
 Central configuration file with:
@@ -142,7 +151,9 @@ Typed REST API client with functions for:
 - `getMarkets()` - List markets with filters
 - `getMarket()` - Single market with price charts
 - `getQuote()` - Trade quotes with calldata
+- `getClaim()` - Claim calldata for winnings
 - `getUserPortfolio()` - User positions
+- `getUserEvents()` - User activity history
 
 ### `lib/queries/`
 TanStack Query options factories using the `queryOptions` pattern:
@@ -165,7 +176,9 @@ Key endpoints used:
 - `GET /markets` - List markets
 - `GET /markets/:slug` - Market details
 - `POST /markets/quote` - Trade quotes
+- `POST /markets/claim` - Claim calldata
 - `GET /users/:address/portfolio` - User positions
+- `GET /users/:address/events` - User activity
 
 [Full API Documentation](https://docs.myriadprotocol.com)
 

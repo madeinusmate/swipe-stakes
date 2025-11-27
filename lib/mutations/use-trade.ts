@@ -3,63 +3,25 @@
 /**
  * Trade Mutation Hook
  *
- * TanStack Query mutation for executing buy/sell trades on Myriad.
+ * TanStack Query mutation hook for executing buy/sell trades on Myriad.
  * Uses EIP-5792 sendCalls to batch approval + trade in a single popup.
+ *
+ * **For the core transaction building logic, see:**
+ * - `@/lib/contracts/trade` - Pure functions for building transactions
+ * - `@/lib/abis` - Contract ABIs
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAccount, useSendCalls, useCallsStatus } from "wagmi";
 import { useCallback, useState, useEffect } from "react";
-import { encodeFunctionData, parseUnits, type Hex } from "viem";
+import { type Hex } from "viem";
 import { useAbstractClient } from "@abstract-foundation/agw-react";
 import { toast } from "sonner";
 import { useNetwork } from "@/lib/network-context";
 import { TOKENS, REFERRAL_CODE, NETWORK } from "@/lib/config";
 import { marketKeys, portfolioKeys } from "@/lib/queries";
+import { buildTradeTransaction } from "@/lib/contracts";
 import type { TradeAction, TransactionStatus } from "@/lib/types";
-
-// =============================================================================
-// ABIs
-// =============================================================================
-
-const ERC20_ABI = [
-  {
-    name: "approve",
-    type: "function",
-    inputs: [
-      { name: "spender", type: "address" },
-      { name: "amount", type: "uint256" },
-    ],
-    outputs: [{ type: "bool" }],
-  },
-] as const;
-
-const PREDICTION_MARKET_ABI = [
-  {
-    name: "referralBuy",
-    type: "function",
-    inputs: [
-      { name: "marketId", type: "uint256" },
-      { name: "outcomeId", type: "uint256" },
-      { name: "minOutcomeSharesToBuy", type: "uint256" },
-      { name: "value", type: "uint256" },
-      { name: "code", type: "string" },
-    ],
-    outputs: [],
-  },
-  {
-    name: "referralSell",
-    type: "function",
-    inputs: [
-      { name: "marketId", type: "uint256" },
-      { name: "outcomeId", type: "uint256" },
-      { name: "value", type: "uint256" },
-      { name: "maxOutcomeSharesToSell", type: "uint256" },
-      { name: "code", type: "string" },
-    ],
-    outputs: [],
-  },
-] as const;
 
 // =============================================================================
 // Types
@@ -193,63 +155,22 @@ export function useTrade() {
       }
 
       const tokenDecimals = params.tokenDecimals ?? 6;
-      const approvalAmount = parseUnits("1000000000000", tokenDecimals);
-      const calls: Array<{ to: Hex; data: Hex; value?: bigint }> = [];
-      
-      // Convert to contract-expected decimals (e.g., 6 for USDC)
-      const valueInDecimals = parseUnits(params.value.toString(), tokenDecimals);
-      const sharesThresholdInDecimals = parseUnits(params.sharesThreshold.toString(), tokenDecimals);
-      
-      if (params.action === "buy") {
-        setStatus("approving");
-        
-        const approveData = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [predictionMarketAddress, approvalAmount],
-        });
-        
-        calls.push({
-          to: tokenAddress,
-          data: approveData,
-        });
 
-        const buyData = encodeFunctionData({
-          abi: PREDICTION_MARKET_ABI,
-          functionName: "referralBuy",
-          args: [
-            BigInt(params.marketId),
-            BigInt(params.outcomeId),
-            sharesThresholdInDecimals,
-            valueInDecimals,
-            REFERRAL_CODE || "",
-          ],
-        });
-        
-        calls.push({
-          to: predictionMarketAddress,
-          data: buyData,
-        });
-      } else {
-        setStatus("pending_signature");
-        
-        const sellData = encodeFunctionData({
-          abi: PREDICTION_MARKET_ABI,
-          functionName: "referralSell",
-          args: [
-            BigInt(params.marketId),
-            BigInt(params.outcomeId),
-            valueInDecimals,
-            sharesThresholdInDecimals,
-            REFERRAL_CODE || "",
-          ],
-        });
-        
-        calls.push({
-          to: predictionMarketAddress,
-          data: sellData,
-        });
-      }
+      // Set status based on action
+      setStatus(params.action === "buy" ? "approving" : "pending_signature");
+
+      // Build transaction calls using the core contract function
+      const calls = buildTradeTransaction({
+        action: params.action,
+        marketId: params.marketId,
+        outcomeId: params.outcomeId,
+        value: params.value,
+        sharesThreshold: params.sharesThreshold,
+        tokenAddress,
+        tokenDecimals,
+        predictionMarketAddress,
+        referralCode: REFERRAL_CODE || "",
+      });
 
       setStatus("pending_signature");
 
