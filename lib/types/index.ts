@@ -7,9 +7,16 @@
 
 // Market types
 export type {
+  MarketState,
   Outcome,
+  PriceDataPoint,
+  PriceChartTimeframe,
+  OutcomePriceCharts,
+  MarketFees,
   Market,
   MarketSummary,
+  MarketAction,
+  MarketEvent,
 } from "./market";
 
 // Portfolio types
@@ -24,6 +31,7 @@ export type {
   ClaimAction,
   QuoteRequest,
   Quote,
+  QuoteFees,
   ClaimRequest,
   ClaimResponse,
   TransactionStatus,

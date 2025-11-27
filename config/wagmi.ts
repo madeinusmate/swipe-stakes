@@ -6,7 +6,6 @@
  * - Connector: Abstract Global Wallet connector for seamless onboarding
  * - Transports: HTTP transports for RPC communication
  * - SSR: Enabled for Next.js server-side rendering compatibility
- * ```
  */
 
 import { createConfig, http } from "wagmi";
