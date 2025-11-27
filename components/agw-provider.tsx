@@ -7,7 +7,6 @@
  * - WagmiProvider: React hooks for Ethereum interactions
  * - QueryClientProvider: TanStack Query for data fetching and caching
  * - AbstractWalletProvider: Abstract's Global Wallet for seamless onboarding
- *
  */
 
 import { AbstractWalletProvider } from "@abstract-foundation/agw-react";

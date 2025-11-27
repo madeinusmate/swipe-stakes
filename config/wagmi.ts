@@ -6,16 +6,6 @@
  * - Connector: Abstract Global Wallet connector for seamless onboarding
  * - Transports: HTTP transports for RPC communication
  * - SSR: Enabled for Next.js server-side rendering compatibility
- *
- * CUSTOMIZE: Add additional connectors (MetaMask, WalletConnect) if needed:
- * ```ts
- * import { metaMask, walletConnect } from "wagmi/connectors";
- *
- * connectors: [
- *   abstractWalletConnector(),
- *   metaMask(),
- *   walletConnect({ projectId: "..." }),
- * ]
  * ```
  */
 
