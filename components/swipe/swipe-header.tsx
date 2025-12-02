@@ -11,7 +11,7 @@
 import Link from "next/link";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { User, SlidersHorizontal, Flame, Clock, TrendingUp, Check } from "lucide-react";
+import { User, SlidersHorizontal, Flame, Clock, TrendingUp, Check, Funnel } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -101,7 +101,7 @@ export const SwipeHeader = ({ filters, onFiltersChange }: SwipeHeaderProps) => {
             size="icon"
             className="h-12 w-12 rounded-full bg-black/20 backdrop-blur-xl border border-white/10 hover:bg-black/40 hover:border-white/20 transition-all"
           >
-            <SlidersHorizontal className="h-5 w-5 text-white" />
+            <Funnel className="h-5 w-5 text-white" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-black/90 backdrop-blur-xl border-white/10 z-[200]">

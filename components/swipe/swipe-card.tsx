@@ -12,11 +12,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Info, Clock, TrendingUp, BarChart3, ChevronLeft } from "lucide-react";
+import { Info, Clock, TrendingUp, BarChart3, ChevronLeft, SkipForward, SkipBack, Rewind } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCompact, formatTimeRemaining, formatPricePercent } from "@/lib/formatters";
 import { sortBinaryOutcomes } from "@/lib/outcome-colors";
-import { useBetSettings } from "@/lib/bet-settings-context";
+import { useBetSettings, type InteractionMode } from "@/lib/bet-settings-context";
 import type { MarketSummary } from "@/lib/types";
 
 // =============================================================================
@@ -26,6 +26,8 @@ import type { MarketSummary } from "@/lib/types";
 interface SwipeCardProps {
   market: MarketSummary;
   onBet: (market: MarketSummary, outcomeId: number) => void;
+  onSkip?: () => void;
+  onRewind?: () => void;
   isPending?: boolean;
   dragX?: number;
 }
@@ -37,16 +39,19 @@ interface SwipeCardProps {
 interface CardFrontProps {
   market: MarketSummary;
   onBet: (outcomeId: number) => void;
+  onSkip?: () => void;
+  onRewind?: () => void;
   onFlip: () => void;
   isPending?: boolean;
   dragX?: number;
   quickBetAmount: number;
+  interactionMode: InteractionMode;
 }
 
-const CardFront = ({ market, onBet, onFlip, isPending, dragX = 0, quickBetAmount }: CardFrontProps) => {
+const CardFront = ({ market, onBet, onSkip, onRewind, onFlip, isPending, dragX = 0, quickBetAmount, interactionMode }: CardFrontProps) => {
   const orderedOutcomes = sortBinaryOutcomes(market.outcomes);
   const [yesOutcome, noOutcome] = orderedOutcomes;
-  
+
   // Calculate overlay opacity based on drag
   const yesOverlayOpacity = Math.min(Math.max(dragX / 150, 0), 0.4);
   const noOverlayOpacity = Math.min(Math.max(-dragX / 150, 0), 0.4);
@@ -87,16 +92,20 @@ const CardFront = ({ market, onBet, onFlip, isPending, dragX = 0, quickBetAmount
 
       {/* Content */}
       <div className="relative h-full flex flex-col justify-end p-6 z-20">
-        {/* Category Badge */}
-        {market.topics.length > 0 && (
-          <div className="absolute top-6 left-6">
-            <span className="px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-white/10 backdrop-blur-md text-white/90 border border-white/10">
-              {market.topics[0]}
-            </span>
-          </div>
-        )}
 
+        {interactionMode === "tap" && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRewind?.();
+            }}
+            className="absolute top-6 left-6 h-10 w-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 hover:bg-white/20 transition-colors pointer-events-auto z-30"
+          >
+            <SkipBack className="h-5 w-5 text-white" />
+          </button>
+        )}
         {/* Info Button */}
+
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -111,6 +120,14 @@ const CardFront = ({ market, onBet, onFlip, isPending, dragX = 0, quickBetAmount
         <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-4 line-clamp-3">
           {market.title}
         </h2>
+        {/* Category Badge */}
+        {market.topics.length > 0 && (
+          <div className="relative mb-4">
+            <span className="px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-white/10 backdrop-blur-md text-white/90 border border-white/10">
+              {market.topics[0]}
+            </span>
+          </div>
+        )}
 
         {/* Stats Row */}
         <div className="flex items-center gap-4 mb-6 text-sm text-white/70">
@@ -127,61 +144,109 @@ const CardFront = ({ market, onBet, onFlip, isPending, dragX = 0, quickBetAmount
         {/* Probability Bar */}
         <div className="mb-6">
           <div className="flex items-center justify-between text-sm font-bold mb-2">
-            <span className="text-emerald-400">{formatPricePercent(yesOutcome.price, 0)}</span>
             <span className="text-rose-400">{formatPricePercent(noOutcome.price, 0)}</span>
+            <span className="text-emerald-400">{formatPricePercent(yesOutcome.price, 0)}</span>
           </div>
           <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/10">
             <div
-              className="absolute left-0 top-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
-              style={{ width: `${yesOutcome.price * 100}%` }}
+              className="absolute left-0 top-0 h-full bg-gradient-to-r from-rose-500 to-rose-400"
+              style={{ width: `${noOutcome.price * 100}%` }}
             />
             <div
-              className="absolute right-0 top-0 h-full bg-gradient-to-l from-rose-500 to-rose-400"
-              style={{ width: `${noOutcome.price * 100}%` }}
+              className="absolute right-0 top-0 h-full bg-gradient-to-l from-emerald-500 to-emerald-400"
+              style={{ width: `${yesOutcome.price * 100}%` }}
             />
           </div>
         </div>
 
-        {/* Bet Buttons */}
-        <div className="grid grid-cols-2 gap-3 pointer-events-auto">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onBet(yesOutcome.id);
-            }}
-            disabled={isPending}
-            className={cn(
-              "relative py-4 rounded-2xl font-bold text-lg uppercase tracking-wide transition-all",
-              "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25",
-              "hover:bg-emerald-400 hover:shadow-emerald-500/40 hover:scale-[1.02]",
-              "active:scale-[0.98]",
-              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            )}
-          >
-            <span className="block">Yes</span>
-            <span className="block text-xs font-medium opacity-80 mt-0.5">
-              ${quickBetAmount}
-            </span>
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onBet(noOutcome.id);
-            }}
-            disabled={isPending}
-            className={cn(
-              "relative py-4 rounded-2xl font-bold text-lg uppercase tracking-wide transition-all",
-              "bg-rose-500 text-white shadow-lg shadow-rose-500/25",
-              "hover:bg-rose-400 hover:shadow-rose-500/40 hover:scale-[1.02]",
-              "active:scale-[0.98]",
-              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            )}
-          >
-            <span className="block">No</span>
-            <span className="block text-xs font-medium opacity-80 mt-0.5">
-              ${quickBetAmount}
-            </span>
-          </button>
+        {/* Action Buttons - conditional based on mode */}
+        <div className="pointer-events-auto">
+          {interactionMode === "tap" ? (
+
+            /* Tap Mode: Yes/No Buttons with Back option */
+            <div className="space-y-3">
+
+
+              {/* Yes/No Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBet(noOutcome.id);
+                  }}
+                  disabled={isPending}
+                  className={cn(
+                    "relative py-4 rounded-2xl font-bold text-lg uppercase tracking-wide transition-all",
+                    "bg-rose-500 text-white shadow-lg shadow-rose-500/25",
+                    "hover:bg-rose-400 hover:shadow-rose-500/40 hover:scale-[1.02]",
+                    "active:scale-[0.98]",
+                    "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  )}
+                >
+                  <span className="block">No</span>
+                  <span className="block text-xs font-medium opacity-80 mt-0.5">
+                    ${quickBetAmount}
+                  </span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBet(yesOutcome.id);
+                  }}
+                  disabled={isPending}
+                  className={cn(
+                    "relative py-4 rounded-2xl font-bold text-lg uppercase tracking-wide transition-all",
+                    "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25",
+                    "hover:bg-emerald-400 hover:shadow-emerald-500/40 hover:scale-[1.02]",
+                    "active:scale-[0.98]",
+                    "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  )}
+                >
+                  <span className="block">Yes</span>
+                  <span className="block text-xs font-medium opacity-80 mt-0.5">
+                    ${quickBetAmount}
+                  </span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Swipe Mode: Rewind and Skip Buttons */
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRewind?.();
+                }}
+                className={cn(
+                  "py-4 rounded-2xl font-bold text-sm uppercase tracking-wide transition-all",
+                  "bg-white/10 text-white border border-white/20",
+                  "hover:bg-white/20 hover:border-white/30 hover:scale-[1.01]",
+                  "active:scale-[0.99]",
+                  "flex items-center justify-center gap-2"
+                )}
+              >
+                <SkipBack className="h-5 w-5" />
+                <span>Back</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSkip?.();
+                }}
+                className={cn(
+                  "py-4 rounded-2xl font-bold text-sm uppercase tracking-wide transition-all",
+                  "bg-white/10 text-white border border-white/20",
+                  "hover:bg-white/20 hover:border-white/30 hover:scale-[1.01]",
+                  "active:scale-[0.99]",
+                  "flex items-center justify-center gap-2"
+                )}
+              >
+                <span>Skip</span>
+                <SkipForward className="h-5 w-5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -319,9 +384,9 @@ const CardBack = ({ market, onFlip }: CardBackProps) => {
 // Main Component
 // =============================================================================
 
-export const SwipeCard = ({ market, onBet, isPending, dragX }: SwipeCardProps) => {
+export const SwipeCard = ({ market, onBet, onSkip, onRewind, isPending, dragX }: SwipeCardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  const { quickBetAmount } = useBetSettings();
+  const { quickBetAmount, interactionMode } = useBetSettings();
 
   const handleFlip = () => setIsFlipped((prev) => !prev);
   const handleBet = (outcomeId: number) => onBet(market, outcomeId);
@@ -353,10 +418,13 @@ export const SwipeCard = ({ market, onBet, isPending, dragX }: SwipeCardProps) =
           <CardFront
             market={market}
             onBet={handleBet}
+            onSkip={onSkip}
+            onRewind={onRewind}
             onFlip={handleFlip}
             isPending={isPending}
             dragX={dragX}
             quickBetAmount={quickBetAmount}
+            interactionMode={interactionMode}
           />
         </div>
 

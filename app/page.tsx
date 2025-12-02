@@ -24,6 +24,7 @@ import { useTrade } from "@/lib/mutations";
 import { USE_MOCK_DATA } from "@/lib/config";
 import { SwipeHeader, CardStack, AuthGate, type SwipeFilters } from "@/components/swipe";
 import type { MarketSummary } from "@/lib/types";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 // =============================================================================
 // Page Component
@@ -131,7 +132,8 @@ export default function SwipeMarketsPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-zinc-950 overflow-hidden">
+    <div className="fixed inset-0 z-[100] overflow-hidden">
+      <AuroraBackground/>
       {/* Header */}
       <SwipeHeader filters={filters} onFiltersChange={handleFiltersChange} />
 

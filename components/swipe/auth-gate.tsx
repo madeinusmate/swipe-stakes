@@ -8,7 +8,7 @@
  */
 
 import { useLoginWithAbstract } from "@abstract-foundation/agw-react";
-import { Wallet, Loader2, TrendingUp, Zap, Shield } from "lucide-react";
+import { Wallet, Loader2, TrendingUp, Zap, Shield, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "wagmi";
 
@@ -23,7 +23,7 @@ export const AuthGate = () => {
   const isLoading = status === "connecting" || status === "reconnecting" || isConnecting || isReconnecting;
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center ">
       {/* Animated background gradient */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-emerald-500/20 via-transparent to-transparent rounded-full blur-3xl animate-pulse" />
@@ -79,8 +79,8 @@ export const AuthGate = () => {
             </>
           ) : (
             <>
-              <Wallet className="mr-2 h-5 w-5" />
-              Connect Wallet
+              <LogIn className="mr-2 h-5 w-5" />
+              Login
             </>
           )}
         </Button>

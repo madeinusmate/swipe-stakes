@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
@@ -25,6 +25,9 @@ import {
   Banknote,
   Settings,
   Zap,
+  LogOut,
+  Hand,
+  MousePointerClick,
 } from "lucide-react";
 import { useNetwork } from "@/lib/network-context";
 import { useBetSettings } from "@/lib/bet-settings-context";
@@ -38,6 +41,7 @@ import { AuthGate } from "@/components/swipe";
 import { USE_MOCK_DATA } from "@/lib/config";
 import type { Position, MarketEvent } from "@/lib/types";
 import { format } from "date-fns";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 // =============================================================================
 // Position Card Component
@@ -312,14 +316,114 @@ const QuickBetSettings = () => {
 };
 
 // =============================================================================
+// Interaction Mode Settings Component
+// =============================================================================
+
+const InteractionModeSettings = () => {
+  const { interactionMode, setInteractionMode } = useBetSettings();
+
+  return (
+    <div className="space-y-4">
+      {/* Section Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-10 w-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
+          <Hand className="h-5 w-5 text-violet-400" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-white">Interaction Mode</h3>
+          <p className="text-xs text-white/50">How you place bets on cards</p>
+        </div>
+      </div>
+
+      {/* Mode Buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setInteractionMode("tap")}
+          className={cn(
+            "relative p-4 rounded-2xl border transition-all text-left",
+            interactionMode === "tap"
+              ? "bg-violet-500/20 border-violet-500/50 shadow-lg shadow-violet-500/10"
+              : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+          )}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <MousePointerClick className={cn(
+              "h-5 w-5",
+              interactionMode === "tap" ? "text-violet-400" : "text-white/50"
+            )} />
+            <span className={cn(
+              "font-bold text-sm",
+              interactionMode === "tap" ? "text-violet-400" : "text-white/70"
+            )}>
+              Tap Mode
+            </span>
+          </div>
+          <p className="text-xs text-white/40 leading-relaxed">
+            Swipe to browse cards. Tap Yes/No buttons to bet.
+          </p>
+          {interactionMode === "tap" && (
+            <div className="absolute top-3 right-3 h-2 w-2 rounded-full bg-violet-400" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setInteractionMode("swipe")}
+          className={cn(
+            "relative p-4 rounded-2xl border transition-all text-left",
+            interactionMode === "swipe"
+              ? "bg-violet-500/20 border-violet-500/50 shadow-lg shadow-violet-500/10"
+              : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+          )}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Hand className={cn(
+              "h-5 w-5",
+              interactionMode === "swipe" ? "text-violet-400" : "text-white/50"
+            )} />
+            <span className={cn(
+              "font-bold text-sm",
+              interactionMode === "swipe" ? "text-violet-400" : "text-white/70"
+            )}>
+              Swipe Mode
+            </span>
+          </div>
+          <p className="text-xs text-white/40 leading-relaxed">
+            Swipe right for Yes, left for No. Tap Skip to pass.
+          </p>
+          {interactionMode === "swipe" && (
+            <div className="absolute top-3 right-3 h-2 w-2 rounded-full bg-violet-400" />
+          )}
+        </button>
+      </div>
+
+      {/* Visual Hint */}
+      <div className={cn(
+        "p-3 rounded-xl border text-center text-sm",
+        interactionMode === "tap" 
+          ? "bg-white/5 border-white/10 text-white/50"
+          : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+      )}>
+        {interactionMode === "tap" ? (
+          <>👆 Tap the Yes/No buttons to place bets</>
+        ) : (
+          <>👉 Swipe right = Yes &nbsp;•&nbsp; 👈 Swipe left = No</>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// =============================================================================
 // Page Component
 // =============================================================================
 
 export default function PortfolioPage() {
   const { status, address } = useAccount();
+  const { disconnect } = useDisconnect();
   const isConnected = status === "connected";
   const { apiBaseUrl, networkConfig } = useNetwork();
-  const [activeTab, setActiveTab] = useState<"positions" | "activity" | "settings">("positions");
+  const [activeTab, setActiveTab] = useState<"positions" | "activity">("positions");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Fetch profile
   const { data: profile } = useQuery(abstractProfileQueryOptions(address));
@@ -355,7 +459,8 @@ export default function PortfolioPage() {
   const isProfitable = totalProfit >= 0;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-zinc-950 overflow-hidden">
+    <div className="fixed inset-0 z-[100] overflow-hidden">
+      <AuroraBackground/>
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3">
         <Link href="/">
@@ -370,7 +475,14 @@ export default function PortfolioPage() {
 
         <h1 className="text-lg font-bold text-white">Profile</h1>
 
-        <div className="w-12" /> {/* Spacer for centering */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsSettingsOpen(true)}
+          className="h-12 w-12 rounded-full bg-black/20 backdrop-blur-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"
+        >
+          <Settings className="h-5 w-5 text-white/70" />
+        </Button>
       </header>
 
       {/* Content */}
@@ -427,7 +539,7 @@ export default function PortfolioPage() {
                   : "text-white/50 hover:text-white/70"
               )}
             >
-                  Positions
+              Positions
             </button>
             <button
               onClick={() => setActiveTab("activity")}
@@ -438,21 +550,9 @@ export default function PortfolioPage() {
                   : "text-white/50 hover:text-white/70"
               )}
             >
-                  Activity
+              Activity
             </button>
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={cn(
-                "flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
-                activeTab === "settings"
-                  ? "bg-white/10 text-white"
-                  : "text-white/50 hover:text-white/70"
-              )}
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </button>
-            </div>
+          </div>
 
           {/* Positions Tab */}
           {activeTab === "positions" && (
@@ -511,12 +611,67 @@ export default function PortfolioPage() {
             </div>
           )}
 
-          {/* Settings Tab */}
-          {activeTab === "settings" && (
+        </div>
+      </div>
+
+      {/* Settings Slide-out Panel */}
+      <div
+        className={cn(
+          "fixed inset-0 z-[200] transition-opacity duration-300",
+          isSettingsOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={() => setIsSettingsOpen(false)}
+        />
+
+        {/* Panel */}
+        <div
+          className={cn(
+            "absolute top-0 right-0 h-full w-full max-w-md bg-zinc-900/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transition-transform duration-300 ease-out",
+            isSettingsOpen ? "translate-x-0" : "translate-x-full"
+          )}
+        >
+          {/* Panel Header */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+            <h2 className="text-xl font-bold text-white">Settings</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSettingsOpen(false)}
+              className="h-10 w-10 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              <ChevronRight className="h-5 w-5 text-white/70" />
+            </Button>
+          </div>
+
+          {/* Panel Content */}
+          <div className="h-[calc(100%-80px)] overflow-y-auto p-6 space-y-6">
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+              <InteractionModeSettings />
+            </div>
             <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
               <QuickBetSettings />
             </div>
-          )}
+
+            {/* Logout Section */}
+            {isConnected && (
+              <div className="pt-4 border-t border-white/10">
+                <button
+                  onClick={() => {
+                    disconnect();
+                    setIsSettingsOpen(false);
+                  }}
+                  className="w-full py-4 rounded-2xl font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 hover:border-rose-500/30 transition-all flex items-center justify-center gap-3"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

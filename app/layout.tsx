@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
+        className={`${inter.variable} ${jetbrainsMono.variable} antialiased bg-zinc-950`}
       >
         <ThemeProvider
           attribute="class"
@@ -45,7 +45,7 @@ export default function RootLayout({
           <Providers>
             <AuroraBackground />
             <div className="relative flex min-h-screen flex-col">
-              <Header />
+              {/* <Header /> */}
               <main className="flex-1">{children}</main>
             </div>
             <Toaster />
