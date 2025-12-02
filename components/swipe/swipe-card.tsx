@@ -144,17 +144,17 @@ const CardFront = ({ market, onBet, onSkip, onRewind, onFlip, isPending, dragX =
         {/* Probability Bar */}
         <div className="mb-6">
           <div className="flex items-center justify-between text-sm font-bold mb-2">
-            <span className="text-rose-400">{formatPricePercent(noOutcome.price, 0)}</span>
             <span className="text-emerald-400">{formatPricePercent(yesOutcome.price, 0)}</span>
+            <span className="text-rose-400">{formatPricePercent(noOutcome.price, 0)}</span>
           </div>
           <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/10">
             <div
-              className="absolute left-0 top-0 h-full bg-gradient-to-r from-rose-500 to-rose-400"
-              style={{ width: `${noOutcome.price * 100}%` }}
+              className="absolute left-0 top-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+              style={{ width: `${yesOutcome.price * 100}%` }}
             />
             <div
-              className="absolute right-0 top-0 h-full bg-gradient-to-l from-emerald-500 to-emerald-400"
-              style={{ width: `${yesOutcome.price * 100}%` }}
+              className="absolute right-0 top-0 h-full bg-gradient-to-l from-rose-500 to-rose-400"
+              style={{ width: `${noOutcome.price * 100}%` }}
             />
           </div>
         </div>

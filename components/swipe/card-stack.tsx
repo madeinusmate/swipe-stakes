@@ -250,7 +250,7 @@ export const CardStack = ({ markets, onBet, isPending }: CardStackProps) => {
 
         return (
           <div
-            key={`${market.id}-${stackIndex}`}
+            key={market.id}
             {...(isTop && !isExiting ? bind() : {})}
             className={cn(
               "absolute touch-none select-none",
